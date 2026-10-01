@@ -99,4 +99,13 @@ rm -f "${TEST_TMP}/still.txt"
 assert_eq "set -e caller continues after a matching failure" "still-running" "$(cat "${TEST_TMP}/still.txt")"
 
 gate_test_record "manual pass records" 0
+
+gate_test_make_nameless_grep "${TEST_TMP}/nameless"
+printf 'hit\n' > "${TEST_TMP}/n1.txt"
+printf 'hit\n' > "${TEST_TMP}/n2.txt"
+assert_output_lacks "nameless grep drops file names" "n1.txt" \
+  env PATH="${TEST_TMP}/nameless:${PATH}" bash -c 'grep -n hit "$@"' _ "${TEST_TMP}/n1.txt" "${TEST_TMP}/n2.txt"
+assert_output_contains "nameless grep keeps names with -H" "n1.txt" \
+  env PATH="${TEST_TMP}/nameless:${PATH}" bash -c 'grep -nH hit "$@"' _ "${TEST_TMP}/n1.txt" "${TEST_TMP}/n2.txt"
+
 gate_test_finish

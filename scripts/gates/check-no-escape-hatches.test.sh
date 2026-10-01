@@ -36,22 +36,13 @@ printf 'export const a = 1\n' > "${WORK}/lint-rules/src/a.ts"
 printf '// as unknown as is banned here\nexport const r = 1 as unknown as string\n' > "${WORK}/lint-rules/oxlint-rules/rule.ts"
 assert_exit "oxlint-rules is not scanned" 0 env ROOT_DIR="${WORK}/lint-rules" bash "${CHECK}"
 
-# A grep that, like GNU grep given one file operand, omits file names unless -H is passed.
-mkdir -p "${WORK}/nameless-grep/bin"
-REAL_GREP="$(command -v grep)"
-cat > "${WORK}/nameless-grep/bin/grep" <<SH
-#!/usr/bin/env bash
-for arg in "\$@"; do
-  case "\${arg}" in -[a-zA-Z]*H*|--with-filename) exec "${REAL_GREP}" "\$@" ;; esac
-done
-exec "${REAL_GREP}" "\$@" -h
-SH
-chmod +x "${WORK}/nameless-grep/bin/grep"
+NAMELESS="${WORK}/nameless-grep/bin"
+gate_test_make_nameless_grep "${NAMELESS}"
 
 mkdir -p "${WORK}/onefile"
 printf 'export const b = 1 as any\n' > "${WORK}/onefile/vite.config.ts"
-assert_exit "a one-file search still fails" 1 env PATH="${WORK}/nameless-grep/bin:${PATH}" ROOT_DIR="${WORK}/onefile" bash "${CHECK}"
+assert_exit "a one-file search still fails" 1 env PATH="${NAMELESS}:${PATH}" ROOT_DIR="${WORK}/onefile" bash "${CHECK}"
 assert_output_contains "the file is named when grep would omit names" "vite.config.ts" \
-  env PATH="${WORK}/nameless-grep/bin:${PATH}" ROOT_DIR="${WORK}/onefile" bash "${CHECK}"
+  env PATH="${NAMELESS}:${PATH}" ROOT_DIR="${WORK}/onefile" bash "${CHECK}"
 
 gate_test_finish

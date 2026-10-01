@@ -10,6 +10,10 @@ import { z } from 'zod'
 import type { ScenarioResult } from './scenario.js'
 
 const COMPOSE_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), '../../../infra/hatchet/compose.yaml')
+const SDK_PACKAGE_JSON_PATH = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../../../node_modules/@kyuworks/sdk/package.json',
+)
 
 export interface MachineInfo {
   platform: string
@@ -20,6 +24,7 @@ export interface MachineInfo {
 
 export interface HarnessReport {
   commitSha: string
+  sdkVersion: string
   machine: MachineInfo
   engineVersion: string
   /** When this report was assembled, after every scenario finished — not when the run started. */
@@ -87,9 +92,22 @@ async function readEngineVersion(): Promise<string> {
   }
 }
 
+const sdkPackageJsonSchema = z.object({ version: z.string() })
+
+// The SDK comes from npm, so the report names the version that ran.
+export function readSdkVersion(): string {
+  try {
+    const parsed = sdkPackageJsonSchema.safeParse(JSON.parse(fs.readFileSync(SDK_PACKAGE_JSON_PATH, 'utf8')))
+    return parsed.success ? parsed.data.version : 'unknown'
+  } catch {
+    return 'unknown'
+  }
+}
+
 export async function buildReport(scenarios: readonly ScenarioResult[]): Promise<HarnessReport> {
   return {
     commitSha: readCommitSha(),
+    sdkVersion: readSdkVersion(),
     machine: readMachineInfo(),
     engineVersion: await readEngineVersion(),
     reportBuiltAt: new Date().toISOString(),
@@ -97,13 +115,16 @@ export async function buildReport(scenarios: readonly ScenarioResult[]): Promise
   }
 }
 
-/** One PASS/FAIL line per scenario, in run order. */
+/** The commit and SDK version, then one PASS/FAIL line per scenario, in run order. */
 export function reportSummaryLines(report: HarnessReport): readonly string[] {
-  return report.scenarios.map((result) => {
-    const status = result.passed ? 'PASS' : 'FAIL'
-    const detail = result.passed
-      ? `${String(result.durationMs)}ms`
-      : (result.error ?? result.failures.map((failure) => `${failure.check}: ${failure.detail}`).join('; '))
-    return `${status}  ${result.name}  ${detail}`
-  })
+  return [
+    `commit ${report.commitSha}  @kyuworks/sdk ${report.sdkVersion}`,
+    ...report.scenarios.map((result) => {
+      const status = result.passed ? 'PASS' : 'FAIL'
+      const detail = result.passed
+        ? `${String(result.durationMs)}ms`
+        : (result.error ?? result.failures.map((failure) => `${failure.check}: ${failure.detail}`).join('; '))
+      return `${status}  ${result.name}  ${detail}`
+    }),
+  ]
 }

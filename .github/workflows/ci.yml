@@ -31,7 +31,14 @@ jobs:
       - name: Gates
         env:
           GITHUB_BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: bash scripts/verify-gates.sh
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_BRANCH: ${{ github.head_ref }}
+        run: |
+          if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+            export PR_BODY_FILE="${RUNNER_TEMP}/pr-body.md"
+            jq -r '.pull_request.body // ""' "${GITHUB_EVENT_PATH}" > "${PR_BODY_FILE}"
+          fi
+          bash scripts/verify-gates.sh
       - name: Lint
         run: pnpm lint
 

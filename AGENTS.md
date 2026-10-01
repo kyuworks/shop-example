@@ -25,3 +25,7 @@ This repository is the shop: the test application for `@kyuworks/sdk`, the compa
 ## Changes
 
 Behaviour changes get a test that fails when the change is reverted; watch it fail first. Keep the diff small and one concern per pull request. Plain language on issues and pull requests: simple words, no assumed context, no metaphors; the first sentence is the ask or the change. Roles, not names, in docs. The CTO merges; an agent never merges and never pushes to `main`.
+
+## Agent ship loop
+
+Humans may shortcut a tiny PR (typo, docs-only, rename). An agent fills `## Agent ship loop` on its PR: `Behavior changed: yes|no`, `Red proof: <test file> — <test title>` (required when behaviour changed), and these rows checked, each with a short reason: Plan (or N/A and why); Red must-hold (or N/A for docs, lint, rename or config only); Smallest diff; Local checks (`pnpm gates`, `pnpm self-tests` and the rest of the normal loop); Separate review (not the author); Hosted CI (do not claim done from a local green). A human deletes the heading. Gate: `scripts/gates/check-agent-ship-loop.sh`, run by `pnpm gates` when `PR_BODY_FILE` is set; CI sets it on every pull request.
