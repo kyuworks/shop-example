@@ -192,7 +192,9 @@ assert_exit "human typo body with no heading passes" 0 \
 assert_output_contains "human shortcut is named" "human shortcut" \
   run_body "${HUMAN}"
 
-assert_exit "empty template left on a human PR passes" 0 \
+assert_exit "the heading alone marks an agent body, so an untouched template fails" 1 \
+  run_body "${EMPTY_TEMPLATE}"
+assert_output_contains "the untouched template names an unchecked item" "not checked" \
   run_body "${EMPTY_TEMPLATE}"
 
 assert_exit "incomplete agent body fails" 1 \
@@ -247,7 +249,9 @@ assert_file_contains "AGENTS.md lets humans shortcut" \
   "${ROOT_DIR}/AGENTS.md" "Humans may shortcut"
 assert_file_contains "verify-gates.sh runs the gate" \
   "${ROOT_DIR}/scripts/verify-gates.sh" "check-agent-ship-loop"
-assert_file_contains "CI hands the gate the PR body" \
-  "${ROOT_DIR}/.github/workflows/ci.yml" "PR_BODY_FILE"
+assert_file_contains "the Ship loop workflow runs the gate on a body edit" \
+  "${ROOT_DIR}/.github/workflows/ship-loop.yml" "edited"
+assert_file_contains "the Ship loop workflow runs the gate script" \
+  "${ROOT_DIR}/.github/workflows/ship-loop.yml" "scripts/gates/check-agent-ship-loop.sh"
 
 gate_test_finish

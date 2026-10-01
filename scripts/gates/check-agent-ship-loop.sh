@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # check-agent-ship-loop.sh — agent PR ship-loop checklist.
 #
-# Humans may omit the section. Agents may not claim Ready without a
-# completed one. verify-gates.sh runs it when PR_BODY_FILE is set; CI sets that on a pull request.
+# The heading marks an agent body and is checked in full; a body without it
+# is a human shortcut. Agents may not claim Ready without a completed section.
+# verify-gates.sh runs it when PR_BODY_FILE is set; ship-loop.yml runs it on every pull request.
 #
 # Self-test: bash scripts/gates/check-agent-ship-loop.test.sh
 #
@@ -91,8 +92,6 @@ if [ -n "${SECTION}" ] || printf '%s\n' "${BODY_TEXT}" | grep -Eq '^##[ \t]+[Aa]
   HAS_HEADING=1
 fi
 
-CHECKED_COUNT="$(printf '%s\n' "${SECTION}" | grep -cE '^[[:space:]]*[-*][[:space:]]*\[[xX]\]' || true)"
-
 IS_AGENT=0
 if [ "${AGENT}" -eq 1 ]; then
   IS_AGENT=1
@@ -103,7 +102,7 @@ fi
 if is_agent_author; then
   IS_AGENT=1
 fi
-if [ "${HAS_HEADING}" -eq 1 ] && [ "${CHECKED_COUNT}" -gt 0 ]; then
+if [ "${HAS_HEADING}" -eq 1 ]; then
   IS_AGENT=1
 fi
 
