@@ -20,7 +20,7 @@ for file in ./*.ts; do
 done
 HITS=""
 if [ "${#TARGETS[@]}" -gt 0 ]; then
-  HITS="$(grep -rnE --include='*.ts' --include='*.tsx' --include='*.mts' --exclude='*.test.ts' --exclude='*.test.tsx' --exclude-dir=node_modules --exclude-dir=dist "${PATTERN}" "${TARGETS[@]}" 2>/dev/null || true)"
+  HITS="$(grep -rnHE --include='*.ts' --include='*.tsx' --include='*.mts' --exclude='*.test.ts' --exclude='*.test.tsx' --exclude-dir=node_modules --exclude-dir=dist "${PATTERN}" "${TARGETS[@]}" 2>/dev/null || true)"
 fi
 if [ -n "${HITS}" ]; then
   echo "FAIL: escape hatch in production source:" >&2

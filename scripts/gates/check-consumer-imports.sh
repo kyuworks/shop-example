@@ -23,7 +23,7 @@ done
 for file in ./*.ts; do
   if [ -f "${file}" ]; then TARGETS+=("${file#./}"); fi
 done
-GREP=(grep -rnE --include='*.ts' --include='*.tsx' --include='*.mts' --exclude-dir=node_modules --exclude-dir=dist)
+GREP=(grep -rnHE --include='*.ts' --include='*.tsx' --include='*.mts' --exclude-dir=node_modules --exclude-dir=dist)
 
 if [ "${#TARGETS[@]}" -gt 0 ]; then
   MODSPEC="@hatchet-dev/[^'\"]*|@kyuworks/schemas([^'\"]*)?"

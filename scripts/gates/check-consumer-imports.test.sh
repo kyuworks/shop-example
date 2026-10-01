@@ -50,4 +50,21 @@ printf '{"dependencies":{"@kyuworks/sdk":"^0.1.0","@kyuworks/schemas":"^0.1.0"}}
 assert_exit "@kyuworks/schemas as a dependency fails" 1 run dep
 assert_output_contains "the dependency is named" "@kyuworks/schemas" run dep
 
+# A grep that, like GNU grep given one file operand, omits file names unless -H is passed.
+mkdir -p "${WORK}/nameless-grep/bin"
+REAL_GREP="$(command -v grep)"
+cat > "${WORK}/nameless-grep/bin/grep" <<SH
+#!/usr/bin/env bash
+for arg in "\$@"; do
+  case "\${arg}" in -[a-zA-Z]*H*|--with-filename) exec "${REAL_GREP}" "\$@" ;; esac
+done
+exec "${REAL_GREP}" "\$@" -h
+SH
+chmod +x "${WORK}/nameless-grep/bin/grep"
+
+fixture onefile vitest.config.ts "const m = require('@hatchet-dev/typescript-sdk')"
+assert_exit "a one-file search still fails" 1 env PATH="${WORK}/nameless-grep/bin:${PATH}" ROOT_DIR="${WORK}/onefile" bash "${CHECK}"
+assert_output_contains "the file is named when grep would omit names" "vitest.config.ts" \
+  env PATH="${WORK}/nameless-grep/bin:${PATH}" ROOT_DIR="${WORK}/onefile" bash "${CHECK}"
+
 gate_test_finish
