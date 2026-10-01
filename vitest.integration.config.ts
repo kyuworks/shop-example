@@ -12,8 +12,7 @@ if (integrationShard !== undefined && integrationShard !== '1' && integrationSha
   throw new Error(`KYU_INTEGRATION_SHARD must be 1, 2 or unset, not "${integrationShard}".`)
 }
 
-// test:integration builds first, so @kyuworks/sdk resolves through its
-// package exports against built JS, like every other consumer.
+// test:integration builds the shop first; @kyuworks/sdk resolves from node_modules like any consumer.
 export default defineConfig({
   test: {
     globalSetup: ['./vitest.integration.setup.ts'],

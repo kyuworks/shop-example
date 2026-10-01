@@ -9,10 +9,7 @@ import { fileURLToPath } from 'node:url'
 import { z } from 'zod'
 import type { ScenarioResult } from './scenario.js'
 
-const COMPOSE_PATH = path.join(
-  path.dirname(fileURLToPath(import.meta.url)),
-  '../../../../../infra/hatchet/compose.yaml',
-)
+const COMPOSE_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), '../../../infra/hatchet/compose.yaml')
 
 export interface MachineInfo {
   platform: string

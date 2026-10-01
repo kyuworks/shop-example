@@ -1,0 +1,13 @@
+# Paths where a mistake is hard to undo, or where a run could relax the rules
+# it runs under. Everything else keeps the normal review rule.
+#
+# This file only blocks a merge once the main ruleset adds "Require review
+# from Code Owners". Until then GitHub only requests the review.
+
+# Append-only: a file that exists on main is never edited.
+/migrations/ @matt-camba
+
+# The gates, the script that runs them, and the workflows that enforce them.
+/scripts/gates/ @matt-camba
+/scripts/verify-gates.sh @matt-camba
+/.github/ @matt-camba

@@ -3,7 +3,7 @@
 # a run and stopped when run.sh exits: this file declares no services block,
 # so fly-proxy has nothing to autostart it on, and the restart policy below
 # is 'never', which leaves it `stopped` rather than restarting CMD. Full
-# runbook: docs/operations/kyu-engine-on-fly.md
+# runbook: docs/harness-on-fly.md
 primary_region = 'syd'
 
 [[restart]]
@@ -20,7 +20,7 @@ primary_region = 'syd'
   # <engine-app>.internal:7077 and http://<engine-app>.internal:8888. Plaintext
   # on 6PN: <engine-app> sets SERVER_GRPC_INSECURE and there is no edge to terminate TLS.
   # Fallback (public edge, same as the laptop-to-Fly run): see "Network path
-  # and its fallback" in docs/operations/kyu-engine-on-fly.md.
+  # and its fallback" in docs/harness-on-fly.md.
   HATCHET_CLIENT_TLS_STRATEGY = 'none'
   KYU_SHOP_NAMESPACE = 'inregion166_'
   KYU_SHOP_SLOTS = '50'

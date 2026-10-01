@@ -53,7 +53,7 @@ async function main(): Promise<void> {
   // dist/web/index.html missing (the build was skipped) is a hint, not a
   // reason to refuse to serve the JSON and POST routes.
   await fs.access(path.join(WEB_ROOT, 'index.html')).catch(() => {
-    log('ui', 'web-missing', { root: WEB_ROOT, hint: 'run `pnpm --filter @kyuworks/shop build`' })
+    log('ui', 'web-missing', { root: WEB_ROOT, hint: 'run `pnpm build`' })
   })
 
   const server = http.createServer((req, res) => {

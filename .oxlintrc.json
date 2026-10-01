@@ -1,14 +1,14 @@
 {
-  "$schema": "../../node_modules/oxlint/configuration_schema.json",
-  "ignorePatterns": ["dist", "node_modules"],
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "ignorePatterns": ["dist", "node_modules", "oxlint-rules"],
   "options": {
     "reportUnusedDisableDirectives": "error",
     "typeAware": true
   },
   "extends": [
-    "../../oxlint-rules/anti-slop.oxlintrc.json",
-    "../../oxlint-rules/language.oxlintrc.json",
-    "../../oxlint-rules/typescript.oxlintrc.json"
+    "./oxlint-rules/anti-slop.oxlintrc.json",
+    "./oxlint-rules/language.oxlintrc.json",
+    "./oxlint-rules/typescript.oxlintrc.json"
   ],
   "plugins": ["unicorn", "typescript", "oxc", "react"],
   "categories": {

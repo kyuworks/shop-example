@@ -1,7 +1,42 @@
-# Kyu shop
+# Shop example
 
-A small app that uses `@kyuworks/sdk` the way a real project would. It sells nothing real; the
-messages are named `shop.*` as a neutral stand-in.
+The shop is the test application for [`@kyuworks/sdk`](https://github.com/kyuworks/kyu), the
+company message bus. It installs the SDK from npm the way a real project would, and it is the proof
+that events, commands and durable handlers work end to end. It sells nothing real; the messages are
+named `shop.*` as a neutral stand-in.
+
+History before this repository's first own commit comes from `kyuworks/kyu`, where the shop lived
+under `examples/shop` and was first called `examples/playground`. That history does not build on its
+own, because there is no SDK in the tree. Issue and pull request numbers (`#N`) in commit messages and
+in files dated before this repository's first own commit refer to the archived private repository.
+In prose they are written "archived issue N".
+
+## Quick start
+
+```bash
+pnpm install
+pnpm hatchet:up                                  # local engine (Docker): http://localhost:8888
+export HATCHET_CLIENT_TOKEN="$(bash infra/hatchet/token.sh)"
+export HATCHET_CLIENT_TLS_STRATEGY=none
+```
+
+Keep per-machine settings (the database URL, the namespace) in `.env.local` and `source` it. Git
+ignores every `.env.*` file; never commit it. Then follow [Run it locally](#run-it-locally).
+
+## Against kyu main
+
+`.github/workflows/against-kyu-main.yml` runs daily and on demand. It packs `main` of
+`kyuworks/kyu`, installs those tarballs in place of the published SDK, checks that the install
+really used them, then runs typecheck, unit tests and both integration shards. A red run there is an
+SDK regression until shown otherwise. It is not a required check. Failure mail goes to whoever last
+edited its cron line, and GitHub pauses a scheduled workflow after 60 days without commits.
+
+The engine compose file is copied from kyu (`infra/hatchet/compose.yaml`); the same run fails if the
+two files drift.
+
+---
+
+## What it runs
 
 Four processes share one Postgres database and one Hatchet engine:
 
@@ -26,7 +61,7 @@ engine retries it on the next worker to start. A worker stopped once the run is 
 wait hands the wait to the next worker directly, with no failed attempt in between.
 
 `record-order`, `audit-order`, `send-invoice`, `watch-shipping` and `run-workflow` each set
-`scheduleTimeout: '30m'` (issue #149), well above the engine's own 5-minute default and above the
+`scheduleTimeout: '30m'` (archived issue 149), well above the engine's own 5-minute default and above the
 `tenant-load` harness scenario's own report-size window, so a run queued behind a backlog is not
 dead-lettered before `worker`'s own `KYU_SHOP_SLOTS`/`KYU_SHOP_DURABLE_SLOTS` knobs (below) get a
 chance to clear it. `record-shipment` and `notify-staff` keep the engine's default: both are short
@@ -44,7 +79,7 @@ transaction, so a pool is safe here. The normal path when Postgres drops the con
 restart needed. `connection-lost` (exit code 1) is the fallback for a handle that can never
 recover — a bare `pg.Client`, or this pool after something has called `.end()` on it — and only
 then does `relay.closed` reject with a `RelayConnectionLostError`. A real deployment runs the
-relay under a supervisor that restarts it on that exit — `pnpm --filter @kyuworks/shop relay`
+relay under a supervisor that restarts it on that exit — `pnpm relay`
 alone does not.
 
 A relay stopped by SIGTERM releases its claimed rows before exiting. A relay killed without
@@ -54,8 +89,8 @@ relay takes them over.
 ## Producer CLI
 
 ```bash
-pnpm --filter @kyuworks/shop publish-cli place-order --tenant <uuid> [--customer <uuid>]
-pnpm --filter @kyuworks/shop publish-cli ship-order --tenant <uuid> --order <uuid> [--carrier <name>]
+pnpm publish-cli place-order --tenant <uuid> [--customer <uuid>]
+pnpm publish-cli ship-order --tenant <uuid> --order <uuid> [--carrier <name>]
 ```
 
 Each command commits one transaction and prints the ids it created as one JSON line. A missing
@@ -91,7 +126,7 @@ matching `shop_invoice` row, the simulated fault that gives the Bus page a dead 
 ## The workflow tables
 
 `migrations/0004_shop.sql` adds four tables that hold a user-defined workflow as data, following
-`docs/architecture/adr/20260920-workflow-definitions-run-through-one-interpreter.md`:
+[the workflow interpreter ADR](https://github.com/kyuworks/kyu/blob/main/docs/architecture/adr/20260920-workflow-definitions-run-through-one-interpreter.md):
 `shop_workflow_definition` (one row per definition, at most one `enabled` per tenant),
 `shop_workflow_version` (one row per saved version, its steps stored as JSON against
 `src/workflow/definition.ts`'s schema), `shop_workflow_run` (one row per run, pinned to the version
@@ -123,27 +158,27 @@ the run id and the step id (a step id may itself be `"start"`; the run's own sta
 separate key so the two can never collide), so a step that runs a second time after a restart changes
 nothing. `run-workflow` fixes `executionTimeout` at one hour. Pinning the version also keeps two
 workers' recorded sleeps identical, which the durable engine requires. See
-`docs/architecture/adr/20260920-workflow-definitions-run-through-one-interpreter.md` for the design
+[the workflow interpreter ADR](https://github.com/kyuworks/kyu/blob/main/docs/architecture/adr/20260920-workflow-definitions-run-through-one-interpreter.md) for the design
 this follows.
 
 ## Web page
 
-A Vite + React app under `web/`, built to `dist/web/` by `pnpm --filter @kyuworks/shop build`
+A Vite + React app under `web/`, built to `dist/web/` by `pnpm build`
 (`tsc -b && vite build`) and served from there by the `ui` process:
 
 ```bash
-pnpm --filter @kyuworks/shop build
-pnpm --filter @kyuworks/shop ui
+pnpm build
+pnpm ui
 ```
 
 Open `http://127.0.0.1:3333` (`KYU_SHOP_UI_PORT` to change the port). For hot reload during
-development, run `pnpm --filter @kyuworks/shop web:dev` instead: it proxies the JSON and POST
+development, run `pnpm web:dev` instead: it proxies the JSON and POST
 routes to the `ui` process, which must already be running.
 
 `web/` uses bundler module resolution, so its own relative imports carry no `.js` extension —
 unlike `src/`, which is NodeNext and always does. Do not mix the two styles inside `web/`.
 `typecheck:tests` type-checks `web/` too, through `tsconfig.web.json`. `web/index.html` is not
-picked up by `pnpm format` or by the changed-file selector; it is not worth a glob for one file.
+picked up by `pnpm format`; it is not worth a glob for one file.
 
 Styling is Tailwind CSS v4 through `@tailwindcss/vite`, with HeroUI v3 components and Heroicons.
 The entry is `web/theme.css`, which imports only the HeroUI component stylesheets the pages
@@ -210,11 +245,11 @@ screen rather than being wiped by a failed refresh.
 
 ### Bundle size
 
-Tracked across issue #81 (Tailwind v4, HeroUI v3, Heroicons), `pnpm --filter @kyuworks/shop build`:
+Tracked across archived issue 81 (Tailwind v4, HeroUI v3, Heroicons), `pnpm build`:
 
 |                                             | JS raw    | JS gzip   | CSS raw  | CSS gzip |
 | ------------------------------------------- | --------- | --------- | -------- | -------- |
-| `main` (before #81)                         | 325.69 kB | 97.61 kB  | 6.38 kB  | 1.65 kB  |
+| `main` (before archived issue 81)                         | 325.69 kB | 97.61 kB  | 6.38 kB  | 1.65 kB  |
 | after PR 3 (Warehouse, ship form, shell)    | 476.51 kB | 145.08 kB | 81.53 kB | 10.10 kB |
 | after PR 4 (Bus page, `styles.css` deleted) | 478.05 kB | 145.23 kB | 77.62 kB | 9.58 kB  |
 
@@ -244,9 +279,9 @@ is missing.
 pnpm hatchet:up
 export HATCHET_CLIENT_TOKEN="$(bash infra/hatchet/token.sh)"
 export HATCHET_CLIENT_TLS_STRATEGY=none
-pnpm --filter @kyuworks/shop build
-pnpm --filter @kyuworks/shop migrate
-pnpm --filter @kyuworks/shop relay
+pnpm build
+pnpm migrate
+pnpm relay
 ```
 
 `relay` blocks in its own terminal, polling the outbox until you stop it with Ctrl-C. Run
@@ -254,8 +289,8 @@ pnpm --filter @kyuworks/shop relay
 the CLI in a third:
 
 ```bash
-pnpm --filter @kyuworks/shop worker
-pnpm --filter @kyuworks/shop publish-cli place-order --tenant <uuid>
+pnpm worker
+pnpm publish-cli place-order --tenant <uuid>
 ```
 
 `HATCHET_CLIENT_TOKEN` and `HATCHET_CLIENT_TLS_STRATEGY` are needed by `relay`, `worker` and `ui`,
@@ -263,14 +298,14 @@ not by `migrate` and not by `publish-cli`.
 
 ### Against the deployed dev engine
 
-Point the same processes at the deployed dev engine (`infra/hatchet/fly/fly.toml`, issue #162)
+Point the same processes at the deployed dev engine (the Fly config under `infra/hatchet/fly/` in a kyu checkout)
 instead of the local stack, using its own worker-token bootstrap:
 
 ```bash
-export HATCHET_CLIENT_TOKEN="$(bash infra/hatchet/fly/token.sh -a <engine-app>)"
+export HATCHET_CLIENT_TOKEN="$(bash <kyu-checkout>/infra/hatchet/fly/token.sh -a <engine-app>)"
 export HATCHET_CLIENT_API_URL=https://<engine-app>.fly.dev
 export HATCHET_CLIENT_HOST_PORT=<engine-app>.fly.dev:7077
-pnpm --filter @kyuworks/shop relay
+pnpm relay
 ```
 
 Leave `HATCHET_CLIENT_TLS_STRATEGY` **unset** here — the client defaults to `tls`, which is what
@@ -297,23 +332,23 @@ The harness runs the shop under injected faults and checks two things after ever
 effect was lost, and no effect happened twice.
 
 ```bash
-pnpm --filter @kyuworks/shop build
+pnpm build
 export KYU_SHOP_DATABASE_URL=postgresql://hatchet:hatchet@localhost:15432/kyu_shop_harness
 export KYU_SHOP_NAMESPACE=harness_
 export HATCHET_CLIENT_TLS_STRATEGY=none
 export HATCHET_CLIENT_TOKEN="$(bash infra/hatchet/token.sh)"
-pnpm --filter @kyuworks/shop migrate
-pnpm --filter @kyuworks/shop harness --scenario all --size smoke --out report.json
+pnpm migrate
+pnpm harness --scenario all --size smoke --out report.json
 ```
 
 `--size smoke` is the default and takes a few minutes. `--size report` uses the full numbers from
-the written proof and takes longer; the time per scenario is in `docs/proofs/`.
+the written proof and takes longer; the time per scenario is in [kyu's `docs/proofs/`](https://github.com/kyuworks/kyu/tree/main/docs/proofs).
 
 The harness empties the shop and bus tables in the database you point it at, before and after
 every scenario. Point it at its own database. It starts and stops its own relay and worker
 processes and never touches Docker.
 
-The harness is not run by CI. It is run by hand to produce the proof under `docs/proofs/`. Every
+The harness is not run by CI. It is run by hand to produce the proofs kept in [kyu's `docs/proofs/`](https://github.com/kyuworks/kyu/tree/main/docs/proofs). Every
 scenario run gets its own namespace (the lane's namespace, the scenario's own name, and a random
 suffix), so a durable run left parked by one scenario, or by an earlier invocation of the same
 scenario, can never be picked up by a later worker. After every scenario the harness also cancels
@@ -354,16 +389,16 @@ Eleven scenarios, run with `--scenario <name>` or `--scenario all`:
 
 ### Against the deployed dev engine
 
-Point the harness at the deployed dev engine (`infra/hatchet/fly/fly.toml`, issue #162) instead of
+Point the harness at the deployed dev engine (the Fly config under `infra/hatchet/fly/` in a kyu checkout) instead of
 the local stack. The shop's own database stays local — only the engine is remote:
 
 ```bash
 PGPASSWORD=hatchet createdb -h localhost -p 15432 -U hatchet kyu_shop_<lane>
 export KYU_SHOP_DATABASE_URL=postgresql://hatchet:hatchet@localhost:15432/kyu_shop_<lane>
-pnpm --filter @kyuworks/shop build
-pnpm --filter @kyuworks/shop migrate
+pnpm build
+pnpm migrate
 
-export HATCHET_CLIENT_TOKEN="$(bash infra/hatchet/fly/token.sh -a <engine-app>)"
+export HATCHET_CLIENT_TOKEN="$(bash <kyu-checkout>/infra/hatchet/fly/token.sh -a <engine-app>)"
 export HATCHET_CLIENT_API_URL=https://<engine-app>.fly.dev
 export HATCHET_CLIENT_HOST_PORT=<engine-app>.fly.dev:7077
 export HATCHET_CLIENT_TLS_SERVER_NAME=<engine-app>.fly.dev
@@ -371,7 +406,7 @@ unset HATCHET_CLIENT_TLS_STRATEGY       # must stay unset: the client defaults t
 export KYU_SHOP_NAMESPACE=<lane>_
 export KYU_SHOP_SLOTS=50 KYU_SHOP_DURABLE_SLOTS=200 KYU_SHOP_WATCH_TIMEOUT=1s
 
-pnpm --filter @kyuworks/shop harness --scenario engine-outage --size report --out "$(pwd)/docs/proofs/data/report-<lane>-engine-outage.json"
+pnpm harness --scenario engine-outage --size report --out "$(pwd)/report-<lane>-engine-outage.json"
 ```
 
 `HATCHET_CLIENT_TLS_SERVER_NAME` matters for `engine-outage` specifically: its proxy dials
@@ -379,20 +414,17 @@ pnpm --filter @kyuworks/shop harness --scenario engine-outage --size report --ou
 what lets a local TCP proxy sit in front of a TLS-terminated remote engine at all (`proxy.ts`'s
 `engineProxyTargetFromEnv`). Use a fresh `<lane>` namespace prefix and database per run — never
 reuse another lane's, on the local engine or this one, or a parked run from that lane's own
-namespace can be picked up. `--out` needs an absolute path (or one written relative to the repo
-root and passed as `$(pwd)/...`): `pnpm --filter` runs the script from `examples/shop`, not the
-repository root, so a plain relative `docs/proofs/data/...` path resolves to the wrong directory
-and the harness fails to write its report after an otherwise-successful run.
+namespace can be picked up.
 
 ### In-region against the deployed dev engine
 
-Issue #166 runs the harness itself in `syd`, beside `<engine-app>`, instead of from a laptop —
+Archived issue 166 runs the harness itself in `syd`, beside `<engine-app>`, instead of from a laptop —
 this is what the harness's own relay-to-engine round trip looks like in production, where the two
 scenarios most sensitive to round-trip count and queueing depth (`outbox-backlog`, `tenant-load`)
 missed their windows when run from a laptop in New Zealand. It is a separate Fly app
 (`<shop-harness-app>`) and its own database cluster, built from `infra/shop-harness/fly/` and
 driven by `run.sh` inside the container rather than by hand. See
-`docs/operations/kyu-engine-on-fly.md`, "Running the shop harness in-region", for the full
+[`docs/harness-on-fly.md`](docs/harness-on-fly.md) for the full
 runbook — creating the app and cluster, the CTO's four secrets, deploying, then `fly machine start`,
 collecting each report with `collect.sh`, and stopping the machine again. The app and its cluster
 were destroyed on 2026-09-25; that runbook section says how to recreate them.

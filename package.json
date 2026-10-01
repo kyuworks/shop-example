@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "scripts": {
     "build": "tsc -b && vite build",
     "clean": "rm -rf dist *.tsbuildinfo",
@@ -20,14 +20,20 @@
     "harness": "node dist/__tests__/harness/run.js",
     "harness:cancel-namespace": "node dist/__tests__/harness/cancelNamespaceCli.js",
     "web:dev": "vite",
-    "web:build": "vite build"
+    "web:build": "vite build",
+    "format": "oxfmt --ignore-path .oxfmtignore \"**/*.{ts,tsx,mts,cts,css,json}\"",
+    "format:check": "oxfmt --check --ignore-path .oxfmtignore \"**/*.{ts,tsx,mts,cts,css,json}\"",
+    "gates": "bash scripts/verify-gates.sh",
+    "self-tests": "bash scripts/verify-self-tests.sh",
+    "hatchet:up": "docker compose -f infra/hatchet/compose.yaml up -d --wait",
+    "hatchet:down": "docker compose -f infra/hatchet/compose.yaml down"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
     "@heroui/react": "^3.2.6",
     "@heroui/styles": "^3.2.6",
     "@internationalized/date": "^3.12.4",
-    "@kyuworks/sdk": "workspace:*",
+    "@kyuworks/sdk": "^0.1.0",
     "@react-aria/ssr": "^3.10.1",
     "@react-aria/utils": "^3.34.1",
     "pg": "^8.23.0",
@@ -39,16 +45,24 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@oxlint/plugins": "^1.83.0",
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^24.13.5",
     "@types/pg": "^8.23.1",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.1",
+    "oxfmt": "^0.68.0",
     "oxlint": "^1.83.0",
     "oxlint-tsgolint": "7.0.2001",
+    "tsx": "^4.23.0",
     "typescript": "^6.0.0",
     "vite": "8.3.0",
     "vitest": "^4.1.0"
-  }
+  },
+  "engines": {
+    "node": ">=24.0.0",
+    "pnpm": ">=11.24.0"
+  },
+  "packageManager": "pnpm@11.24.0"
 }

@@ -1,0 +1,14 @@
+# Every install verifies that each lockfile entry is at least this old (minutes).
+# 7 days. Do not zero it and do not pass --trust-lockfile anywhere.
+minimumReleaseAge: 10080
+# First-party packages, published from kyuworks/kyu with provenance.
+minimumReleaseAgeExclude:
+  - '@kyuworks/sdk'
+  - '@kyuworks/schemas'
+minimumReleaseAgeExcludePrune: true
+# Lifecycle scripts run only when true. The Hatchet SDK's postinstall is
+# required; protobufjs only prints a banner.
+allowBuilds:
+  esbuild: true
+  '@hatchet-dev/typescript-sdk': true
+  protobufjs: false

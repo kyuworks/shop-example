@@ -34,9 +34,9 @@ assert_output_contains "fails the build with no commit sha" 'test -n "$KYU_HARNE
 assert_output_contains "re-includes infra/hatchet/compose.yaml" "infra/hatchet/compose.yaml" cat "${IGNOREFILE}"
 assert_output_contains "re-includes run.sh" "infra/shop-harness/fly/run.sh" cat "${IGNOREFILE}"
 assert_output_contains "re-excludes .env files" "**/.env*" cat "${IGNOREFILE}"
-REINCLUDE_LINE="$(grep -n '^!examples/shop/\*\*$' "${IGNOREFILE}" | head -1 | cut -d: -f1)"
+REINCLUDE_LINE="$(grep -n '^!src/\*\*$' "${IGNOREFILE}" | head -1 | cut -d: -f1)"
 ENV_EXCLUDE_LINE="$(grep -n '^\*\*/\.env\*$' "${IGNOREFILE}" | head -1 | cut -d: -f1)"
-gate_test_record "env re-exclude comes after the examples/shop/** re-include" \
+gate_test_record "env re-exclude comes after the src/** re-include" \
   "$([ -n "${REINCLUDE_LINE}" ] && [ -n "${ENV_EXCLUDE_LINE}" ] && [ "${ENV_EXCLUDE_LINE}" -gt "${REINCLUDE_LINE}" ] && echo 0 || echo 1)"
 
 gate_test_finish

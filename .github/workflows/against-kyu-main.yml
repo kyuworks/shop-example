@@ -1,0 +1,110 @@
+name: Against kyu main
+
+# The shop installs the published SDK. This workflow packs kyuworks/kyu's main
+# instead and runs the shop against it, so an SDK regression shows up here.
+# Not a required check.
+on:
+  schedule:
+    - cron: '17 17 * * *'
+  workflow_dispatch:
+    inputs:
+      kyu_ref:
+        description: Branch, tag or commit of kyuworks/kyu to test against
+        default: main
+
+permissions:
+  contents: read
+
+env:
+  FORCE_COLOR: '1'
+
+jobs:
+  against-kyu-main:
+    name: Against kyu main (${{ matrix.shard }}/2)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ['1', '2']
+    env:
+      KYU_SHOP_DATABASE_URL: postgresql://hatchet:hatchet@localhost:5432/kyu_shop
+      KYU_INTEGRATION_SHARD: ${{ matrix.shard }}
+    services:
+      postgres:
+        image: postgres:15.6
+        env:
+          POSTGRES_USER: hatchet
+          POSTGRES_PASSWORD: hatchet
+          POSTGRES_DB: hatchet
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -d hatchet -U hatchet"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      hatchet-lite:
+        image: ghcr.io/hatchet-dev/hatchet/hatchet-lite:v0.107.0
+        env:
+          DATABASE_URL: postgresql://hatchet:hatchet@postgres:5432/hatchet?sslmode=disable
+          SERVER_AUTH_COOKIE_DOMAIN: localhost
+          SERVER_AUTH_COOKIE_INSECURE: 't'
+          SERVER_GRPC_BIND_ADDRESS: 0.0.0.0
+          SERVER_GRPC_INSECURE: 't'
+          SERVER_GRPC_BROADCAST_ADDRESS: localhost:7077
+          SERVER_GRPC_PORT: '7077'
+          SERVER_URL: http://localhost:8888
+          SERVER_AUTH_SET_EMAIL_VERIFIED: 't'
+          SERVER_INTERNAL_CLIENT_INTERNAL_GRPC_BROADCAST_ADDRESS: localhost:7077
+        ports:
+          - 8888:8888
+          - 7077:7077
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/checkout@v5
+        with:
+          repository: kyuworks/kyu
+          ref: ${{ inputs.kyu_ref || 'main' }}
+          path: kyu-main
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Pack kyu main
+        working-directory: kyu-main
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+          pnpm --filter @kyuworks/schemas --filter @kyuworks/sdk pack --pack-destination "${RUNNER_TEMP}/kyu-packs"
+      - name: Install the packed SDK
+        run: |
+          {
+            echo 'overrides:'
+            for pkg in schemas sdk; do
+              echo "  '@kyuworks/${pkg}': file:$(ls "${RUNNER_TEMP}"/kyu-packs/kyuworks-${pkg}-*.tgz)"
+            done
+          } >> pnpm-workspace.yaml
+          pnpm install --no-frozen-lockfile
+          readlink node_modules/@kyuworks/sdk | grep -q 'file+' || { echo "sdk did not come from the packed tarball" >&2; exit 1; }
+          readlink node_modules/.pnpm/@kyuworks+sdk@file*/node_modules/@kyuworks/schemas | grep -q 'file+' || { echo "schemas did not come from the packed tarball" >&2; exit 1; }
+      - name: Engine compose file matches kyu main
+        run: diff -u kyu-main/infra/hatchet/compose.yaml infra/hatchet/compose.yaml
+      - run: pnpm typecheck
+      - name: Unit tests
+        if: matrix.shard == '1'
+        run: pnpm test
+      - name: Wait for the engine
+        run: |
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:8888/api/ready >/dev/null 2>&1; then echo ready; exit 0; fi
+            sleep 2
+          done
+          echo "hatchet-lite never became ready" >&2
+          docker logs "${{ job.services.hatchet-lite.id }}" | tail -50
+          exit 1
+      - name: Mint a worker token
+        run: |
+          TOKEN="$(docker exec "${{ job.services.hatchet-lite.id }}" /hatchet-admin token create --config /config --tenant-id 707d0855-80ab-4e1f-a156-f1c4546cbf52 | tr -d '\r\n')"
+          echo "::add-mask::${TOKEN}"
+          echo "HATCHET_CLIENT_TOKEN=${TOKEN}" >> "$GITHUB_ENV"
+          echo "HATCHET_CLIENT_TLS_STRATEGY=none" >> "$GITHUB_ENV"
+      - run: pnpm test:integration

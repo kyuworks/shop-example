@@ -1,5 +1,4 @@
-// The harness's entry point: `pnpm --filter @kyuworks/shop harness --scenario
-// all --size smoke`. Not run by CI; a human runs this to produce the proof
+// The harness's entry point: `pnpm harness --scenario all --size smoke`. Not run by CI; a human runs this to produce the proof
 // under docs/proofs/ (PR B).
 import fs from 'node:fs/promises'
 import nodeProcess from 'node:process'
