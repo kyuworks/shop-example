@@ -168,6 +168,22 @@ assert_neq() {
   fi
 }
 
+# gate_test_make_nameless_grep dir — writes dir/grep, a grep that, like GNU grep given
+# one file operand, omits file names unless -H or --with-filename is passed.
+gate_test_make_nameless_grep() {
+  local bin="$1" real
+  real="$(command -v grep)"
+  mkdir -p "${bin}"
+  cat > "${bin}/grep" <<SH
+#!/usr/bin/env bash
+for arg in "\$@"; do
+  case "\${arg}" in -[a-zA-Z]*H*|--with-filename) exec "${real}" "\$@" ;; esac
+done
+exec "${real}" "\$@" -h
+SH
+  chmod +x "${bin}/grep"
+}
+
 gate_test_finish() {
   echo ""
   echo "Passed: ${GATE_TEST_PASS}  Failed: ${GATE_TEST_FAIL}"

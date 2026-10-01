@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { composeImageTag, readCommitSha } from './report.js'
+import { composeImageTag, readCommitSha, readSdkVersion, reportSummaryLines } from './report.js'
+import type { HarnessReport } from './report.js'
 
 describe('readCommitSha', () => {
   it('returns KYU_HARNESS_COMMIT_SHA when it is set', () => {
@@ -45,5 +46,25 @@ describe('composeImageTag', () => {
       if (original === undefined) delete process.env['KYU_HATCHET_IMAGE_TAG']
       else process.env['KYU_HATCHET_IMAGE_TAG'] = original
     }
+  })
+})
+
+describe('readSdkVersion', () => {
+  it('reads the installed @kyuworks/sdk version from node_modules', () => {
+    expect(readSdkVersion()).toMatch(/^\d+\.\d+\.\d+/)
+  })
+})
+
+describe('reportSummaryLines', () => {
+  it('names the commit and the SDK version before the scenario lines', () => {
+    const report: HarnessReport = {
+      commitSha: 'abc123',
+      sdkVersion: '0.1.0',
+      machine: { platform: 'linux', arch: 'x64', cpuCount: 1, totalMemBytes: 1 },
+      engineVersion: 'v0',
+      reportBuiltAt: '2026-10-01T00:00:00.000Z',
+      scenarios: [],
+    }
+    expect(reportSummaryLines(report)).toEqual(['commit abc123  @kyuworks/sdk 0.1.0'])
   })
 })
