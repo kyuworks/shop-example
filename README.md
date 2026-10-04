@@ -20,6 +20,16 @@ export HATCHET_CLIENT_TOKEN="$(bash infra/hatchet/token.sh)"
 export HATCHET_CLIENT_TLS_STRATEGY=none
 ```
 
+`pnpm hatchet:up`, `pnpm hatchet:down` and `infra/hatchet/token.sh` first download kyu's engine
+compose file into `.cache/kyu-engine/` (`scripts/fetch-engine-compose.sh`), at the kyu tag of the
+installed `@kyuworks/sdk` (`v` and its version). Set `KYU_COMPOSE_REF` to use another kyu ref, for
+example `main`. Without a network they reuse a file downloaded earlier for the same ref; with no such
+file they fail and start nothing. This repository keeps no copy of that file. The engine image tag
+this repository pins is the `hatchet-lite` service image in `.github/workflows/ci.yml`; the harness
+report reads it from there. Kyu's checkout and this repository both use the compose project name
+`kyu-hatchet`, so a developer who also runs Kyu's stack from Kyu's `main` sets `KYU_COMPOSE_REF=main`
+here, or starts the stack from Kyu's checkout only.
+
 Keep per-machine settings (the database URL, the namespace) in `.env.local` and `source` it. Git
 ignores every `.env.*` file; never commit it. Then follow [Run it locally](#run-it-locally).
 
@@ -31,8 +41,10 @@ really used them, then runs typecheck, unit tests and both integration shards. A
 SDK regression until shown otherwise. It is not a required check. Failure mail goes to whoever last
 edited its cron line, and GitHub pauses a scheduled workflow after 60 days without commits.
 
-The engine compose file is copied from kyu (`infra/hatchet/compose.yaml`); the same run fails if the
-two files drift.
+After the tests, it compares the engine image tag in kyu's `infra/hatchet/compose.yaml` at the ref
+under test with the `hatchet-lite` service image in this repository's `.github/workflows/ci.yml` and
+in the workflow itself (`scripts/check-engine-image-tag.sh`), and fails naming both tags when they
+differ. Other changes to kyu's compose file do not fail it.
 
 ---
 

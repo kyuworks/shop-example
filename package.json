@@ -25,8 +25,8 @@
     "format:check": "oxfmt --check --ignore-path .oxfmtignore \"**/*.{ts,tsx,mts,cts,css,json}\"",
     "gates": "bash scripts/verify-gates.sh",
     "self-tests": "bash scripts/verify-self-tests.sh",
-    "hatchet:up": "docker compose -f infra/hatchet/compose.yaml up -d --wait",
-    "hatchet:down": "docker compose -f infra/hatchet/compose.yaml down"
+    "hatchet:up": "bash scripts/fetch-engine-compose.sh && docker compose -f .cache/kyu-engine/compose.yaml up -d --wait",
+    "hatchet:down": "bash scripts/fetch-engine-compose.sh && docker compose -f .cache/kyu-engine/compose.yaml down"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",

@@ -42,3 +42,6 @@ kb/
 
 # Kyu main checkout used by the scheduled against-kyu-main workflow
 kyu-main/
+
+# Kyu's engine compose file, downloaded by scripts/fetch-engine-compose.sh
+.cache/

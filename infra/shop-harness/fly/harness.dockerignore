@@ -13,7 +13,7 @@
 !src/**
 !migrations/
 !migrations/**
-!infra/hatchet/compose.yaml
+!.github/workflows/ci.yml
 !infra/shop-harness/fly/run.sh
 
 # Re-excluded even under a re-included directory: never ship a host build
