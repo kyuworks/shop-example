@@ -60,6 +60,24 @@ assert_exit "offline, refuses a copy fetched for another ref" 1 offline_ref main
 assert_last_output_contains "says there is no copy for that ref" "no earlier copy for main"
 
 assert_exit "refuses a ref with characters a ref here may not use" 1 fetch_ref 'v1 ;rm'
+
+# Refused refs never reach the source. Decoys sit where a collapsed ".." would land.
+DEEP="${TMP}/deep/kyu"
+for decoy in infra/hatchet kyuworks/shop-example/main/infra/hatchet; do
+  mkdir -p "${TMP}/deep/${decoy}" "${TMP}/${decoy}"
+  printf '%s' "${GOOD}" > "${TMP}/deep/${decoy}/compose.yaml"
+  printf '%s' "${GOOD}" > "${TMP}/${decoy}/compose.yaml"
+done
+mkdir -p "${DEEP}/main/infra/hatchet" && printf '%s' "${GOOD}" > "${DEEP}/main/infra/hatchet/compose.yaml"
+refuse_ref() { KYU_COMPOSE_REF="$1" KYU_COMPOSE_BASE_URL="file://${DEEP}" bash "${FETCH}"; }
+for bad in '..' '../../kyuworks/shop-example/main' 'v0.1.0/../main' '/main' '-o' 'a/..' ' '; do
+  rm -rf "${ROOT}/.cache"
+  assert_exit "refuses the ref '${bad}'" 1 refuse_ref "${bad}"
+  assert_last_output_contains "says why the ref '${bad}' was refused" "may not use"
+  assert_exit "fetches and saves nothing for the ref '${bad}'" 1 test -e "${ROOT}/.cache"
+done
+assert_exit "the script passes --proto-redir =https to curl" 0 grep -qF -- '--proto-redir =https' "${FETCH}"
+assert_exit "the script passes --path-as-is to curl" 0 grep -qF -- '--path-as-is' "${FETCH}"
 rm -f "${ROOT}/node_modules/@kyuworks/sdk/package.json"
 assert_exit "fails with no installed SDK and no KYU_COMPOSE_REF" 1 fetch
 assert_last_output_contains "says to install first" "run pnpm install first"

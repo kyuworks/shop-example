@@ -24,7 +24,7 @@ if [ -z "${REF}" ]; then
   REF="v$(node -e 'process.stdout.write(JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8")).version)' "${SDK_PACKAGE_JSON}")"
 fi
 case "${REF}" in
-  ''|*[!A-Za-z0-9._/-]*) fail "ref '${REF}' has characters a git ref here may not use" ;;
+  ''|*[!A-Za-z0-9._/-]*|*..*|/*|-*) fail "ref '${REF}' has characters or a shape a git ref here may not use" ;;
 esac
 URL="${BASE_URL}/${REF}/infra/hatchet/compose.yaml"
 
@@ -32,7 +32,7 @@ mkdir -p "${CACHE_DIR}"
 TMP="$(mktemp "${CACHE_DIR}/compose.yaml.XXXXXX")"
 trap 'rm -f "${TMP}" "${TMP}.ref"' EXIT
 
-if ! curl -fsSL --connect-timeout 10 --max-time 60 -o "${TMP}" "${URL}"; then
+if ! curl -fsSL --path-as-is --proto-redir =https --connect-timeout 10 --max-time 60 -o "${TMP}" "${URL}"; then
   if [ -f "${COMPOSE}" ] && [ -f "${REF_FILE}" ] && [ "$(cat "${REF_FILE}")" = "${REF}" ]; then
     echo "fetch-engine-compose: could not download ${URL}; reusing the copy fetched earlier for ${REF}" >&2
     exit 0
