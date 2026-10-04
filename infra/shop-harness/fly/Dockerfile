@@ -17,7 +17,7 @@ RUN pnpm install --frozen-lockfile
 COPY tsconfig.base.json tsconfig.json ./
 COPY src/ src/
 COPY migrations/ migrations/
-COPY infra/hatchet/compose.yaml infra/hatchet/compose.yaml
+COPY .github/workflows/ci.yml .github/workflows/ci.yml
 COPY infra/shop-harness/fly/run.sh infra/shop-harness/fly/run.sh
 
 # The web UI (vite build) is skipped, the harness never needs it.

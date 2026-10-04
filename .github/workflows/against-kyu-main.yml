@@ -86,8 +86,6 @@ jobs:
           pnpm install --no-frozen-lockfile
           readlink node_modules/@kyuworks/sdk | grep -q 'file+' || { echo "sdk did not come from the packed tarball" >&2; exit 1; }
           readlink node_modules/.pnpm/@kyuworks+sdk@file*/node_modules/@kyuworks/schemas | grep -q 'file+' || { echo "schemas did not come from the packed tarball" >&2; exit 1; }
-      - name: Engine compose file matches kyu main
-        run: diff -u kyu-main/infra/hatchet/compose.yaml infra/hatchet/compose.yaml
       - run: pnpm typecheck
       - name: Unit tests
         if: matrix.shard == '1'
@@ -108,3 +106,6 @@ jobs:
           echo "HATCHET_CLIENT_TOKEN=${TOKEN}" >> "$GITHUB_ENV"
           echo "HATCHET_CLIENT_TLS_STRATEGY=none" >> "$GITHUB_ENV"
       - run: pnpm test:integration
+      - name: Engine image tag matches kyu
+        if: ${{ !cancelled() && matrix.shard == '1' }}
+        run: bash scripts/check-engine-image-tag.sh kyu-main/infra/hatchet/compose.yaml .github/workflows/ci.yml .github/workflows/against-kyu-main.yml

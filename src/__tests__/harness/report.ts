@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url'
 import { z } from 'zod'
 import type { ScenarioResult } from './scenario.js'
 
-const COMPOSE_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), '../../../infra/hatchet/compose.yaml')
+const CI_WORKFLOW_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), '../../../.github/workflows/ci.yml')
 const SDK_PACKAGE_JSON_PATH = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
   '../../../node_modules/@kyuworks/sdk/package.json',
@@ -59,21 +59,20 @@ function readMachineInfo(): MachineInfo {
   return { platform: os.platform(), arch: os.arch(), cpuCount: os.cpus().length, totalMemBytes: os.totalmem() }
 }
 
-// infra/hatchet/compose.yaml pins the tag consumers actually run
-// (`hatchet-lite:${KYU_HATCHET_IMAGE_TAG:-<pinned>}`); read that default
-// instead of falling back to 'latest', which the pin was added to avoid.
-function composeDefaultImageTag(): string {
-  const text = fs.readFileSync(COMPOSE_PATH, 'utf8')
-  const match = /hatchet-lite:\$\{KYU_HATCHET_IMAGE_TAG:-([^}]+)\}/.exec(text)
-  if (match?.[1] === undefined) throw new Error(`no hatchet-lite image tag default found in ${COMPOSE_PATH}`)
+// ci.yml's hatchet-lite service pins the engine tag; the daily run checks it against kyu's
+// compose file (scripts/check-engine-image-tag.sh). Read that pin instead of falling back to 'latest'.
+function pinnedEngineDefaultTag(): string {
+  const text = fs.readFileSync(CI_WORKFLOW_PATH, 'utf8')
+  const match = /ghcr\.io\/hatchet-dev\/hatchet\/hatchet-lite:([^\s'"]+)/.exec(text)
+  if (match?.[1] === undefined) throw new Error(`no hatchet-lite image tag found in ${CI_WORKFLOW_PATH}`)
   return match[1]
 }
 
 // hatchet-lite has no explicit /api/v1/meta version field today (checked
-// against the local engine); this composes the pinned tag instead of
+// against the local engine); this names the pinned tag instead of
 // guessing at a field that is not there.
-export function composeImageTag(): string {
-  return `hatchet-lite:${process.env['KYU_HATCHET_IMAGE_TAG'] ?? composeDefaultImageTag()}`
+export function pinnedEngineImageTag(): string {
+  return `hatchet-lite:${process.env['KYU_HATCHET_IMAGE_TAG'] ?? pinnedEngineDefaultTag()}`
 }
 
 const metaResponseSchema = z.object({ version: z.string().optional() })
@@ -84,11 +83,11 @@ async function readEngineVersion(): Promise<string> {
   try {
     const headers: Record<string, string> = token !== undefined ? { authorization: `Bearer ${token}` } : {}
     const response = await fetch(`${apiUrl}/api/v1/meta`, { headers })
-    if (!response.ok) return composeImageTag()
+    if (!response.ok) return pinnedEngineImageTag()
     const parsed = metaResponseSchema.safeParse(await response.json())
-    return parsed.success && parsed.data.version !== undefined ? parsed.data.version : composeImageTag()
+    return parsed.success && parsed.data.version !== undefined ? parsed.data.version : pinnedEngineImageTag()
   } catch {
-    return composeImageTag()
+    return pinnedEngineImageTag()
   }
 }
 

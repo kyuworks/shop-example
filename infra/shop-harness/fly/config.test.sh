@@ -29,9 +29,12 @@ assert_output_contains "based on node:24-" "FROM node:24-" cat "${DOCKERFILE}"
 assert_output_contains "installs the pinned pnpm" "pnpm@11.24.0" cat "${DOCKERFILE}"
 assert_output_contains "installs with --frozen-lockfile" "--frozen-lockfile" cat "${DOCKERFILE}"
 assert_output_contains "fails the build with no commit sha" 'test -n "$KYU_HARNESS_COMMIT_SHA"' cat "${DOCKERFILE}"
+assert_output_contains "copies ci.yml, which pins the engine tag the report records" "COPY .github/workflows/ci.yml .github/workflows/ci.yml" cat "${DOCKERFILE}"
+assert_output_lacks "copies no engine compose file" "compose.yaml" cat "${DOCKERFILE}"
 
 # --- harness.dockerignore ---
-assert_output_contains "re-includes infra/hatchet/compose.yaml" "infra/hatchet/compose.yaml" cat "${IGNOREFILE}"
+assert_output_contains "re-includes .github/workflows/ci.yml" ".github/workflows/ci.yml" cat "${IGNOREFILE}"
+assert_output_lacks "re-includes no engine compose file" "compose.yaml" cat "${IGNOREFILE}"
 assert_output_contains "re-includes run.sh" "infra/shop-harness/fly/run.sh" cat "${IGNOREFILE}"
 assert_output_contains "re-excludes .env files" "**/.env*" cat "${IGNOREFILE}"
 REINCLUDE_LINE="$(grep -n '^!src/\*\*$' "${IGNOREFILE}" | head -1 | cut -d: -f1)"

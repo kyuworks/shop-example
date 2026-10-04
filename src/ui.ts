@@ -12,7 +12,7 @@ import { describeBusTopology } from './ui/busTopology.js'
 import { handleUiRequest } from './ui/handleRequest.js'
 import { readWebResponse } from './ui/serveWeb.js'
 
-// The engine's own dashboard, not one Kyu ships (see infra/hatchet/compose.yaml).
+// The engine's own dashboard, not one Kyu ships (see kyu's infra/hatchet/compose.yaml).
 const DASHBOARD_URL = 'http://localhost:8888'
 
 // ui.js runs from dist/, so this is dist/web — vite's build.outDir.
