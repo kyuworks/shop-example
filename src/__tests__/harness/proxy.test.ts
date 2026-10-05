@@ -7,7 +7,7 @@ describe('engineProxyTargetFromEnv', () => {
     expect(target).toMatchObject({ grpcHost: '127.0.0.1', grpcPort: 7077, apiPort: 8888, apiTls: false })
   })
 
-  it('proxies the deployed engine when the client env names it', () => {
+  it('proxies a remote engine when the client env names it', () => {
     const target = engineProxyTargetFromEnv({
       HATCHET_CLIENT_HOST_PORT: 'engine.example.com:7077',
       HATCHET_CLIENT_API_URL: 'https://engine.example.com',

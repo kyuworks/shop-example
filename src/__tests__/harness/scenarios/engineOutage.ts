@@ -1,6 +1,6 @@
 // Scenario: engine-outage. A harness-owned TCP proxy (proxy.ts) fronts
 // whichever engine the ambient HATCHET_CLIENT_HOST_PORT / HATCHET_CLIENT_API_URL
-// name — the local engine by default, or a deployed one when those are set;
+// name — the local engine by default, or a remote one when those are set;
 // relay and worker are started pointed at the proxy through the SDK's own
 // overrides (proven against the running local engine, plan-144.md's
 // proxy-proof.sh). Cutting the proxy simulates the engine going unreachable
