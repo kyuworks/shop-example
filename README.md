@@ -279,8 +279,8 @@ Tracked across archived issue 81 (Tailwind v4, HeroUI v3, Heroicons), `pnpm buil
 | `KYU_SHOP_UI_PORT`            | no                             | `3333`            | Read only by `ui`; the local port the web page binds to.                                                                 |
 | `HATCHET_CLIENT_TOKEN`        | for `relay`, `worker` and `ui` | —                 | Read by the engine client directly, same as the SDK's own integration lane. `migrate` and `publish-cli` never build one. |
 | `HATCHET_CLIENT_TLS_STRATEGY` | for `relay`, `worker` and `ui` | —                 | Read by the engine client directly.                                                                                      |
-| `HATCHET_CLIENT_API_URL`      | no                             | from the token     | Read by the engine client directly. Point the shop at a different engine's dashboard API.                               |
-| `HATCHET_CLIENT_HOST_PORT`    | no                             | from the token     | Read by the engine client directly. Point the shop at a different engine's gRPC address.                                |
+| `HATCHET_CLIENT_API_URL`      | no                             | from the token     | Read by the engine client directly. The engine's dashboard API; the local stack by default. The shop is never pointed at a deployed engine. |
+| `HATCHET_CLIENT_HOST_PORT`    | no                             | from the token     | Read by the engine client directly. The engine's gRPC address; the local stack by default. The shop is never pointed at a deployed engine. |
 
 The namespace is a prefix; the engine lowercases it and gives it a trailing underscore if one
 is missing.
@@ -397,7 +397,7 @@ Until September 2026 the harness was also run against an engine the Kyu side ran
 laptop, and from a container in the same region as that engine (archived issue 166), which measured
 `outbox-backlog` and `tenant-load` without the laptop's round trip. That engine is decommissioned,
 so those runs cannot be repeated; their results stay in [kyu's `docs/proofs/`](https://github.com/kyuworks/kyu/tree/main/docs/proofs).
-The container's Fly config and runbook were removed in shop-example issue 11 and are in this
+The container's Fly config and runbook were removed by pull request 12, asked for in issue 11, and are in this
 repository's history before that change.
 
 ## Engine hygiene
