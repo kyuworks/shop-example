@@ -42,8 +42,8 @@ function isWorkingTreeDirty(): boolean {
   }
 }
 
-// A build with no .git (a checkout with no .git) stamps the commit in KYU_HARNESS_COMMIT_SHA instead
-// of relying on the git read below.
+// A checkout with no .git directory stamps the commit in KYU_HARNESS_COMMIT_SHA instead of relying
+// on the git read below.
 export function readCommitSha(): string {
   const fromEnv = process.env['KYU_HARNESS_COMMIT_SHA']
   if (fromEnv !== undefined && fromEnv !== '') return fromEnv
