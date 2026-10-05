@@ -308,21 +308,13 @@ pnpm publish-cli place-order --tenant <uuid>
 `HATCHET_CLIENT_TOKEN` and `HATCHET_CLIENT_TLS_STRATEGY` are needed by `relay`, `worker` and `ui`,
 not by `migrate` and not by `publish-cli`.
 
-### Against the deployed dev engine
-
-Point the same processes at the deployed dev engine (the Fly config under `infra/hatchet/fly/` in a kyu checkout)
-instead of the local stack, using its own worker-token bootstrap:
-
-```bash
-export HATCHET_CLIENT_TOKEN="$(bash <kyu-checkout>/infra/hatchet/fly/token.sh -a <engine-app>)"
-export HATCHET_CLIENT_API_URL=https://<engine-app>.fly.dev
-export HATCHET_CLIENT_HOST_PORT=<engine-app>.fly.dev:7077
-pnpm relay
-```
-
-Leave `HATCHET_CLIENT_TLS_STRATEGY` **unset** here — the client defaults to `tls`, which is what
-the deployed engine expects on its public address. The local lane sets it to `none`; do not carry
-that setting over.
+The shop runs against two engines only: the local stack that `pnpm hatchet:up` starts, and in CI
+a `hatchet-lite` service container that each integration job starts for its own run
+(`.github/workflows/ci.yml`). It is never pointed at a deployed engine. Kyu runs no deployed
+engine of its own; each application that publishes on the bus runs its own
+([kyu's decision](https://github.com/kyuworks/kyu/blob/main/docs/architecture/adr/20261006-each-producer-application-runs-its-own-engine.md),
+and [the guide for that application's operator](https://github.com/kyuworks/kyu/blob/main/docs/operations/kyu-engine-on-fly.md)).
+The shop is a test application, not one of those.
 
 To see the retired bucket move, insert a row the relay cannot read. `envelope` here is missing
 every field but `name`; `name` must match `envelope->>'name'` (the table checks it). A retired
@@ -358,7 +350,7 @@ the written proof and takes longer; the time per scenario is in [kyu's `docs/pro
 
 The harness empties the shop and bus tables in the database you point it at, before and after
 every scenario. Point it at its own database. It starts and stops its own relay and worker
-processes and never touches Docker.
+processes and never touches Docker. Like the shop itself, it runs against the local stack.
 
 The harness is not run by CI. It is run by hand to produce the proofs kept in [kyu's `docs/proofs/`](https://github.com/kyuworks/kyu/tree/main/docs/proofs). Every
 scenario run gets its own namespace (the lane's namespace, the scenario's own name, and a random
@@ -399,47 +391,14 @@ Eleven scenarios, run with `--scenario <name>` or `--scenario all`:
   wait in the outbox with no run while another tenant's complete and the in-flight run finishes,
   then complete in order after `kyu.tenants.resume`.
 
-### Against the deployed dev engine
+### Earlier runs against a deployed engine
 
-Point the harness at the deployed dev engine (the Fly config under `infra/hatchet/fly/` in a kyu checkout) instead of
-the local stack. The shop's own database stays local — only the engine is remote:
-
-```bash
-PGPASSWORD=hatchet createdb -h localhost -p 15432 -U hatchet kyu_shop_<lane>
-export KYU_SHOP_DATABASE_URL=postgresql://hatchet:hatchet@localhost:15432/kyu_shop_<lane>
-pnpm build
-pnpm migrate
-
-export HATCHET_CLIENT_TOKEN="$(bash <kyu-checkout>/infra/hatchet/fly/token.sh -a <engine-app>)"
-export HATCHET_CLIENT_API_URL=https://<engine-app>.fly.dev
-export HATCHET_CLIENT_HOST_PORT=<engine-app>.fly.dev:7077
-export HATCHET_CLIENT_TLS_SERVER_NAME=<engine-app>.fly.dev
-unset HATCHET_CLIENT_TLS_STRATEGY       # must stay unset: the client defaults to 'tls'
-export KYU_SHOP_NAMESPACE=<lane>_
-export KYU_SHOP_SLOTS=50 KYU_SHOP_DURABLE_SLOTS=200 KYU_SHOP_WATCH_TIMEOUT=1s
-
-pnpm harness --scenario engine-outage --size report --out "$(pwd)/report-<lane>-engine-outage.json"
-```
-
-`HATCHET_CLIENT_TLS_SERVER_NAME` matters for `engine-outage` specifically: its proxy dials
-`127.0.0.1`, but presents the real engine's name for both SNI and certificate checking, which is
-what lets a local TCP proxy sit in front of a TLS-terminated remote engine at all (`proxy.ts`'s
-`engineProxyTargetFromEnv`). Use a fresh `<lane>` namespace prefix and database per run — never
-reuse another lane's, on the local engine or this one, or a parked run from that lane's own
-namespace can be picked up.
-
-### In-region against the deployed dev engine
-
-Archived issue 166 runs the harness itself in `syd`, beside `<engine-app>`, instead of from a laptop —
-this is what the harness's own relay-to-engine round trip looks like in production, where the two
-scenarios most sensitive to round-trip count and queueing depth (`outbox-backlog`, `tenant-load`)
-missed their windows when run from a laptop in New Zealand. It is a separate Fly app
-(`<shop-harness-app>`) and its own database cluster, built from `infra/shop-harness/fly/` and
-driven by `run.sh` inside the container rather than by hand. See
-[`docs/harness-on-fly.md`](docs/harness-on-fly.md) for the full
-runbook — creating the app and cluster, the CTO's four secrets, deploying, then `fly machine start`,
-collecting each report with `collect.sh`, and stopping the machine again. The app and its cluster
-were destroyed on 2026-09-25; that runbook section says how to recreate them.
+Until September 2026 the harness was also run against an engine the Kyu side ran on Fly: from a
+laptop, and from a container in the same region as that engine (archived issue 166), which measured
+`outbox-backlog` and `tenant-load` without the laptop's round trip. That engine is decommissioned,
+so those runs cannot be repeated; their results stay in [kyu's `docs/proofs/`](https://github.com/kyuworks/kyu/tree/main/docs/proofs).
+The container's Fly config and runbook were removed in shop-example issue 11 and are in this
+repository's history before that change.
 
 ## Engine hygiene
 
