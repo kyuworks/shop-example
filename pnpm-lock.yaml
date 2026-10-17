@@ -21,8 +21,8 @@ importers:
         specifier: ^3.12.4
         version: 3.12.4
       '@kyuworks/sdk':
-        specifier: ^0.1.0
-        version: 0.1.0(@grpc/grpc-js@1.14.5)(debug@4.4.3)
+        specifier: ^0.3.0
+        version: 0.3.0(@grpc/grpc-js@1.14.5)(debug@4.4.3)
       '@react-aria/ssr':
         specifier: ^3.10.1
         version: 3.10.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -120,6 +120,24 @@ packages:
 
   '@bufbuild/protobuf@2.15.0':
     resolution: {integrity: sha512-DAheWUkVr/SJTWCc+lg9dhY0eN4SaWlf4+bG1KzHeXbnqt0AfB/NX0Z+VunGlM1ki1B4zVvye27MpKh/svySUA==}
+
+  '@connectrpc/connect-node@2.1.2':
+    resolution: {integrity: sha512-+i/aAOpsI8sIx1mbYp6d99zvxaUSF6t/jP9Ux9maAmjsZPgmIQ3JuIeYi0zJIP9zlCnBlJjkpPosshCgdRuThQ==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      '@bufbuild/protobuf': ^2.7.0
+      '@connectrpc/connect': 2.1.2
+
+  '@connectrpc/connect-web@2.1.2':
+    resolution: {integrity: sha512-1tfaK85MU+gJjwwmL31d2rzdf0XCYX99chZf63uG89SGBUd4XuZ4ZzhGo2u79TPXOE6nLIZQ2okrpyey42PYdg==}
+    peerDependencies:
+      '@bufbuild/protobuf': ^2.7.0
+      '@connectrpc/connect': 2.1.2
+
+  '@connectrpc/connect@2.1.2':
+    resolution: {integrity: sha512-MXkBijtcX09R10Eb6sFeIetc6w6746eio6xtfuyVOH7oQAacT1X0GzMIQFux6Qy8cq3W/T5qX5Bei8YbFtmRGA==}
+    peerDependencies:
+      '@bufbuild/protobuf': ^2.7.0
 
   '@esbuild/aix-ppc64@0.28.2':
     resolution: {integrity: sha512-XExcO+dvLKvVtNTibSTBej1NCAbaGhWn9Ww1ZPx80qsahhPFe/8jgWP0IchNe0F3HwkU7n8ejhH8bjonqht8mQ==}
@@ -286,8 +304,8 @@ packages:
     engines: {node: '>=6'}
     hasBin: true
 
-  '@hatchet-dev/typescript-sdk@1.33.1':
-    resolution: {integrity: sha512-M7oeO3eaZ0RMhiNIEx4bofNhXKMHes8/Eb7tM0uFz4d/8FDRbRh/48z45/D3Abnxt8KgxUxigiZ7xRVryqv3Sg==}
+  '@hatchet-dev/typescript-sdk@1.37.0':
+    resolution: {integrity: sha512-+DRsL/y1XiXF7DwqVs2Q5s9TW3mQCyOtHTCkBjzG0UDi8Si33D68qX6OyYSqli0r6/BEh3IiPc/pwPt+1O5IrA==}
     engines: {node: '>=20'}
     peerDependencies:
       '@anthropic-ai/claude-agent-sdk': ^0.3.148
@@ -373,11 +391,16 @@ packages:
   '@js-sdsl/ordered-map@4.4.2':
     resolution: {integrity: sha512-iUKgm52T8HOE/makSxjqoWhe95ZJA1/G1sYsGev2JDKUSS14KAgg1LHb+Ba+IPow0xflbnSkOsZcO08C7w1gYw==}
 
-  '@kyuworks/schemas@0.1.0':
-    resolution: {integrity: sha512-2y5THMIw6N+PFZO8jC8SUXYZGwbEcwY2NRH0kR77yLmKvPF14fd2nLrj+EFiBCXh9ruYtrGOyZziZqqCiKhg8A==}
+  '@kyuworks/schemas@0.3.0':
+    resolution: {integrity: sha512-qrJGOYhB/hWxy/roybr5irJpu1NvFUoqvNIF/gAm84J7FiXH0gZPUZzZqOC/zFdhzTVQjQCReizx1RPzP1Ymhg==}
 
-  '@kyuworks/sdk@0.1.0':
-    resolution: {integrity: sha512-aaIfjHqeKFVW9kwTWupuQbW/GRfQdIAdx1jxrzLb4dXViSxaYV6exTg5aLAV96SkLIZMs9OKDhGAO76g0RLjMQ==}
+  '@kyuworks/sdk@0.3.0':
+    resolution: {integrity: sha512-LzfMBps7ptD+zhuVLTA3QXaYrSODlYijtkm0vB87yk5wKtLSL4Ak7nyqg/oQLCYn8Hg125NE81hAIC0yw7QY/g==}
+    peerDependencies:
+      '@opentelemetry/api': ^1.9.0
+    peerDependenciesMeta:
+      '@opentelemetry/api':
+        optional: true
 
   '@oxc-project/types@0.152.0':
     resolution: {integrity: sha512-oM/5rLBm2tPkg0iBgkH/FOeR3PCDpY19GTgAZjMFM8h9WI9VW7cLgzp6nwtarYKmovavIQZ+Fe/RKX/8C8O/Rw==}
@@ -1976,6 +1999,20 @@ snapshots:
 
   '@bufbuild/protobuf@2.15.0': {}
 
+  '@connectrpc/connect-node@2.1.2(@bufbuild/protobuf@2.15.0)(@connectrpc/connect@2.1.2(@bufbuild/protobuf@2.15.0))':
+    dependencies:
+      '@bufbuild/protobuf': 2.15.0
+      '@connectrpc/connect': 2.1.2(@bufbuild/protobuf@2.15.0)
+
+  '@connectrpc/connect-web@2.1.2(@bufbuild/protobuf@2.15.0)(@connectrpc/connect@2.1.2(@bufbuild/protobuf@2.15.0))':
+    dependencies:
+      '@bufbuild/protobuf': 2.15.0
+      '@connectrpc/connect': 2.1.2(@bufbuild/protobuf@2.15.0)
+
+  '@connectrpc/connect@2.1.2(@bufbuild/protobuf@2.15.0)':
+    dependencies:
+      '@bufbuild/protobuf': 2.15.0
+
   '@esbuild/aix-ppc64@0.28.2':
     optional: true
 
@@ -2066,9 +2103,12 @@ snapshots:
       protobufjs: 7.6.6
       yargs: 17.7.3
 
-  '@hatchet-dev/typescript-sdk@1.33.1(@grpc/grpc-js@1.14.5)(debug@4.4.3)(zod@4.6.5)':
+  '@hatchet-dev/typescript-sdk@1.37.0(@grpc/grpc-js@1.14.5)(debug@4.4.3)(zod@4.6.5)':
     dependencies:
       '@bufbuild/protobuf': 2.15.0
+      '@connectrpc/connect': 2.1.2(@bufbuild/protobuf@2.15.0)
+      '@connectrpc/connect-node': 2.1.2(@bufbuild/protobuf@2.15.0)(@connectrpc/connect@2.1.2(@bufbuild/protobuf@2.15.0))
+      '@connectrpc/connect-web': 2.1.2(@bufbuild/protobuf@2.15.0)(@connectrpc/connect@2.1.2(@bufbuild/protobuf@2.15.0))
       '@types/qs': 6.15.1
       abort-controller-x: 0.5.0
       axios: 1.20.0(debug@4.4.3)
@@ -2155,22 +2195,21 @@ snapshots:
 
   '@js-sdsl/ordered-map@4.4.2': {}
 
-  '@kyuworks/schemas@0.1.0':
+  '@kyuworks/schemas@0.3.0':
     dependencies:
       '@standard-schema/spec': 1.1.0
       zod: 4.6.5
 
-  '@kyuworks/sdk@0.1.0(@grpc/grpc-js@1.14.5)(debug@4.4.3)':
+  '@kyuworks/sdk@0.3.0(@grpc/grpc-js@1.14.5)(debug@4.4.3)':
     dependencies:
-      '@hatchet-dev/typescript-sdk': 1.33.1(@grpc/grpc-js@1.14.5)(debug@4.4.3)(zod@4.6.5)
-      '@kyuworks/schemas': 0.1.0
+      '@hatchet-dev/typescript-sdk': 1.37.0(@grpc/grpc-js@1.14.5)(debug@4.4.3)(zod@4.6.5)
+      '@kyuworks/schemas': 0.3.0
       zod: 4.6.5
     transitivePeerDependencies:
       - '@anthropic-ai/claude-agent-sdk'
       - '@grpc/grpc-js'
       - '@modelcontextprotocol/sdk'
       - '@openai/agents'
-      - '@opentelemetry/api'
       - '@opentelemetry/core'
       - '@opentelemetry/exporter-trace-otlp-grpc'
       - '@opentelemetry/instrumentation'

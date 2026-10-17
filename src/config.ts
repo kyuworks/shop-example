@@ -20,8 +20,8 @@ function isLogLevel(value: string): value is LogLevel {
   return LOG_LEVELS.some((level) => level === value)
 }
 
-// The engine's own Duration string grammar (h then m then s, each optional):
-// packages/sdk wraps it but does not export the parser, so tests can shorten it.
+// Whole hours, then minutes, then seconds, each optional: the engine client's Duration type, narrower
+// than the engine's own grammar. The SDK does not export its parser. Tests set short waits through this.
 const DURATION_PATTERN = /^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$/
 
 function isDuration(value: string): value is Duration {

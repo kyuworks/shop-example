@@ -28,9 +28,10 @@ interface TableCounts {
   runs: number
 }
 
-// vitest.integration.clearTables.ts empties these before every file. This is
-// the last file that writes these tables in vitest's size-descending order:
-// only src/db/pool.integration.test.ts is smaller, and it writes none of them.
+// vitest.integration.clearTables.ts empties these before every file. Vitest runs
+// files largest first, so nearly every file that writes these tables runs before
+// this one: only pruneOutbox.integration.test.ts (its own kyu_outbox rows, deleted
+// in its afterAll) and src/db/pool.integration.test.ts are smaller.
 describe('the shop integration harness', () => {
   it('starts every file with empty bus and shop tables', async () => {
     const result = await admin.query<TableCounts>(
