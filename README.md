@@ -115,6 +115,31 @@ The CLI needs no engine credentials. It builds a publisher with `createShopPubli
 `kyu_outbox` row inside the CLI's own transaction and stops there. Only `relay`, `worker` and `ui`
 build an engine client, and only they need `HATCHET_CLIENT_TOKEN`.
 
+## Outbox prune job
+
+The SDK never deletes an outbox row by itself; each producer runs a prune job
+([kyu's guide, Retention and audit](https://github.com/kyuworks/kyu/blob/main/docs/operations/first-consumer.md)).
+The shop's is `pnpm prune-outbox` (`node dist/bin/prune.js`, `src/bin/prune.ts`). It calls the
+SDK's `pruneOutbox` once with the SDK's defaults, prints one `done` line with how many published,
+retired and cancelled rows it deleted, and exits. It deletes only rows that were published, retired
+or cancelled more than 45 days ago, 1000 rows per statement. It never deletes a pending or scheduled
+row, so a workflow hand-off waiting for its `publishAt` is safe however far ahead it is. 45 days is
+the SDK's floor and is enough here: the shop's longest durable wait is the 1-hour `executionTimeout`
+of `watch-shipping` and `run-workflow`. On any error it prints a `failed` line and exits 1. It needs
+only `KYU_SHOP_DATABASE_URL`, no engine token, and opens one database connection.
+
+Run it once a day from cron, on a machine that has the shop built and its settings in `.env.local`:
+
+```cron
+30 3 * * * cd /path/to/shop-example && set -a && . ./.env.local && set +a && /usr/local/bin/node dist/bin/prune.js >> prune-outbox.log 2>&1
+```
+
+Cron runs `sh` with a short `PATH`, so the line exports the settings with `set -a` and names `node` by
+path. Use your machine's own node path (`command -v node` prints it).
+
+Nothing runs it for you: the relay, the worker and the ui never prune. The SDK has no prune for
+`kyu_processed`, and the shop does not delete those rows either.
+
 ## The catalogue, orders and the demo tenant
 
 `migrations/0002_shop.sql` adds `shop_product` (a fixed six-row catalogue, seeded with literal
@@ -277,7 +302,7 @@ Tracked across archived issue 81 (Tailwind v4, HeroUI v3, Heroicons), `pnpm buil
 | `KYU_SHOP_SLOTS`              | no                             | `5`                | Read only by `worker`; how many plain handler runs it takes at once.                                                     |
 | `KYU_SHOP_DURABLE_SLOTS`      | no                             | `5`                | Read only by `worker`; how many durable runs it takes at once. A durable run holds its slot for the whole wait.          |
 | `KYU_SHOP_UI_PORT`            | no                             | `3333`            | Read only by `ui`; the local port the web page binds to.                                                                 |
-| `HATCHET_CLIENT_TOKEN`        | for `relay`, `worker` and `ui` | —                 | Read by the engine client directly, same as the SDK's own integration lane. `migrate` and `publish-cli` never build one. |
+| `HATCHET_CLIENT_TOKEN`        | for `relay`, `worker` and `ui` | —                 | Read by the engine client directly, same as the SDK's own integration lane. `migrate`, `publish-cli` and `prune-outbox` never build one. |
 | `HATCHET_CLIENT_TLS_STRATEGY` | for `relay`, `worker` and `ui` | —                 | Read by the engine client directly.                                                                                      |
 | `HATCHET_CLIENT_API_URL`      | no                             | from the token     | Read by the engine client directly. The engine's dashboard API; the local stack by default. The shop is never pointed at a deployed engine. |
 | `HATCHET_CLIENT_HOST_PORT`    | no                             | from the token     | Read by the engine client directly. The engine's gRPC address; the local stack by default. The shop is never pointed at a deployed engine. |
@@ -303,10 +328,11 @@ the CLI in a third:
 ```bash
 pnpm worker
 pnpm publish-cli place-order --tenant <uuid>
+pnpm prune-outbox                                # the daily outbox prune, run once by hand
 ```
 
 `HATCHET_CLIENT_TOKEN` and `HATCHET_CLIENT_TLS_STRATEGY` are needed by `relay`, `worker` and `ui`,
-not by `migrate` and not by `publish-cli`.
+not by `migrate`, `publish-cli` or `prune-outbox`.
 
 The shop runs against two engines only: the local stack that `pnpm hatchet:up` starts, and in CI
 a `hatchet-lite` service container that each integration job starts for its own run
@@ -327,8 +353,8 @@ VALUES (gen_random_uuid(), 'shop.order.legacy', '{"name":"shop.order.legacy"}'::
 ```
 
 Reload `/bus`: a **Producer: (unknown)** box appears, **retired** goes up by one and **waiting for relay** does not move. Delete the row
-when you are done. Nothing in the shop deletes retired rows; the SDK's `pruneRetired` does, when
-a consumer schedules it.
+when you are done. The daily [outbox prune job](#outbox-prune-job) deletes retired rows too, but
+only once they were retired more than 45 days ago.
 
 ## Failure and load harness
 
