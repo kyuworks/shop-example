@@ -1,6 +1,6 @@
 import nodeProcess from 'node:process'
 import { readConfig } from '../config.js'
-import { createPool } from '../db/pool.js'
+import { createPool, logDroppedConnections } from '../db/pool.js'
 import { pruneShopOutbox } from '../db/pruneShopOutbox.js'
 import { describeError, log } from '../log.js'
 
@@ -8,6 +8,7 @@ import { describeError, log } from '../log.js'
 async function main(): Promise<void> {
   const config = readConfig()
   const pool = createPool(config.databaseUrl, { max: 1 })
+  logDroppedConnections(pool, 'prune-outbox')
   try {
     await pruneShopOutbox(pool)
   } finally {

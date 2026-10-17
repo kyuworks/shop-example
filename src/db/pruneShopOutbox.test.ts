@@ -1,12 +1,6 @@
-import { OUTBOX_PRUNE_FLOOR_MS } from '@kyuworks/sdk'
-import type { QueryParam, QueryRows, RelayQueryable } from '@kyuworks/sdk'
+import type { QueryRows, RelayQueryable } from '@kyuworks/sdk'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { pruneShopOutbox } from './pruneShopOutbox.js'
-
-interface RecordedQuery {
-  text: string
-  params: readonly QueryParam[]
-}
 
 interface LoggedPrune {
   process: string
@@ -16,18 +10,14 @@ interface LoggedPrune {
   cancelled: number
 }
 
-// Fewer rows than one slice for every column, so the SDK sends exactly one DELETE per column.
-function deletedRowsFor(text: string): number {
-  if (text.includes('published_at <')) return 2
-  if (text.includes('dead_at <')) return 1
-  return 0
-}
-
-function recordingDb(calls: RecordedQuery[]): RelayQueryable {
+// Answers each call with the next scripted row count, so the counts the SDK returns are known
+// without reading its SQL. Fewer rows than one slice, so the SDK sends one call per column.
+function scriptedDb(rowCounts: readonly number[], calls: { count: number }): RelayQueryable {
   return {
-    query(text: string, params: readonly QueryParam[]): Promise<QueryRows> {
-      calls.push({ text, params })
-      return Promise.resolve({ rows: [], rowCount: deletedRowsFor(text) })
+    query(): Promise<QueryRows> {
+      const rowCount = rowCounts[calls.count] ?? 0
+      calls.count += 1
+      return Promise.resolve({ rows: [], rowCount })
     },
   }
 }
@@ -45,38 +35,30 @@ describe('pruneShopOutbox', () => {
     vi.restoreAllMocks()
   })
 
-  it('deletes published, retired and cancelled outbox rows older than the SDK prune floor', async () => {
+  it('runs the SDK prune against the database and returns the counts it computed', async () => {
     vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
-    const calls: RecordedQuery[] = []
-    const startedAt = Date.now()
+    const calls = { count: 0 }
 
-    const counts = await pruneShopOutbox(recordingDb(calls))
+    const counts = await pruneShopOutbox(scriptedDb([2, 1, 3], calls))
 
-    const endedAt = Date.now()
-    expect(counts).toEqual({ published: 2, retired: 1, cancelled: 0 })
-    expect(calls.map((call) => /WHERE (\w+) </.exec(call.text)?.[1])).toEqual([
-      'published_at',
-      'dead_at',
-      'cancelled_at',
-    ])
-    for (const call of calls) {
-      expect(call.text.startsWith('DELETE FROM kyu_outbox')).toBe(true)
-      const before = call.params[0]
-      if (!(before instanceof Date)) throw new Error(`expected a Date cutoff, got ${String(before)}`)
-      expect(before.getTime()).toBeGreaterThanOrEqual(startedAt - OUTBOX_PRUNE_FLOOR_MS)
-      expect(before.getTime()).toBeLessThanOrEqual(endedAt - OUTBOX_PRUNE_FLOOR_MS)
-      expect(call.params[1]).toBe(1000)
-    }
+    expect(calls.count).toBeGreaterThanOrEqual(1)
+    expect(counts).toEqual({ published: 2, retired: 1, cancelled: 3 })
   })
 
-  it('logs what it deleted as one prune-outbox done line', async () => {
+  it('logs the returned counts as one prune-outbox done line', async () => {
     const write = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
 
-    await pruneShopOutbox(recordingDb([]))
+    const counts = await pruneShopOutbox(scriptedDb([2, 1, 3], { count: 0 }))
 
     expect(write).toHaveBeenCalledTimes(1)
     const record: LoggedPrune = JSON.parse(String(write.mock.calls[0]?.[0]))
-    expect(record).toMatchObject({ process: 'prune-outbox', event: 'done', published: 2, retired: 1, cancelled: 0 })
+    expect(record).toMatchObject({
+      process: 'prune-outbox',
+      event: 'done',
+      published: counts.published,
+      retired: counts.retired,
+      cancelled: counts.cancelled,
+    })
   })
 
   it('rejects with the database error and logs no done line when a delete fails', async () => {

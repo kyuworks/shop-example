@@ -131,8 +131,11 @@ only `KYU_SHOP_DATABASE_URL`, no engine token, and opens one database connection
 Run it once a day from cron, on a machine that has the shop built and its settings in `.env.local`:
 
 ```cron
-30 3 * * * cd /path/to/shop-example && . ./.env.local && node dist/bin/prune.js >> prune-outbox.log 2>&1
+30 3 * * * cd /path/to/shop-example && set -a && . ./.env.local && set +a && /usr/local/bin/node dist/bin/prune.js >> prune-outbox.log 2>&1
 ```
+
+Cron runs `sh` with a short `PATH`, so the line exports the settings with `set -a` and names `node` by
+path. Use your machine's own node path (`command -v node` prints it).
 
 Nothing runs it for you: the relay, the worker and the ui never prune. The SDK has no prune for
 `kyu_processed`, and the shop does not delete those rows either.
