@@ -297,7 +297,7 @@ Tracked across archived issue 81 (Tailwind v4, HeroUI v3, Heroicons), `pnpm buil
 | `KYU_SHOP_DATABASE_URL`       | yes                            | —                 | Postgres connection string for this app's own database.                                                                  |
 | `KYU_SHOP_NAMESPACE`          | no                             | `shop_`           | Shared prefix so the three processes agree on one run.                                                                   |
 | `KYU_SHOP_LOG_LEVEL`          | no                             | `info`            | One of `debug`, `info`, `warn`, `error`.                                                                                 |
-| `KYU_SHOP_WATCH_TIMEOUT`      | no                             | `3m`              | `watch-shipping`'s correlated wait timeout; an h/m/s duration string.                                                    |
+| `KYU_SHOP_WATCH_TIMEOUT`      | no                             | `3m`              | `watch-shipping`'s correlated wait timeout; an h/m/s duration string of 20 minutes or less, each number 15 digits or fewer. |
 | `KYU_SHOP_RELAY_BATCH_SIZE`   | no                             | the SDK's default | Read only by `relay`; rows claimed per tick.                                                                             |
 | `KYU_SHOP_SLOTS`              | no                             | `5`                | Read only by `worker`; how many plain handler runs it takes at once.                                                     |
 | `KYU_SHOP_DURABLE_SLOTS`      | no                             | `5`                | Read only by `worker`; how many durable runs it takes at once. A durable run holds its slot for the whole wait.          |

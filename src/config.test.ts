@@ -101,6 +101,30 @@ describe('readConfig', () => {
     expect(config.watchShippingTimeout).toBe('20m')
   })
 
+  // @kyuworks/sdk 0.4.0 refuses it inside the body, which would dead-letter every watch-shipping run.
+  it('throws MissingConfigError naming the variable for a watch-shipping timeout with a 16-digit number', () => {
+    let error: MissingConfigError | undefined
+    try {
+      readConfig({
+        KYU_SHOP_DATABASE_URL: 'postgresql://localhost/db',
+        KYU_SHOP_WATCH_TIMEOUT: '0000000000000180s',
+      })
+    } catch (caught) {
+      if (caught instanceof MissingConfigError) error = caught
+      else throw caught
+    }
+    expect(error).toBeInstanceOf(MissingConfigError)
+    expect(error?.variable).toBe('KYU_SHOP_WATCH_TIMEOUT')
+  })
+
+  it('accepts a watch-shipping timeout with a 15-digit number', () => {
+    const config = readConfig({
+      KYU_SHOP_DATABASE_URL: 'postgresql://localhost/db',
+      KYU_SHOP_WATCH_TIMEOUT: '000000000000180s',
+    })
+    expect(config.watchShippingTimeout).toBe('000000000000180s')
+  })
+
   it('throws MissingConfigError naming the variable for a watch-shipping timeout over 20 minutes', () => {
     let error: MissingConfigError | undefined
     try {

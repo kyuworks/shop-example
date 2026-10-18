@@ -20,9 +20,9 @@ function isLogLevel(value: string): value is LogLevel {
   return LOG_LEVELS.some((level) => level === value)
 }
 
-// Whole hours, then minutes, then seconds, each optional: the engine client's Duration type, narrower
-// than the engine's own grammar. The SDK does not export its parser. Tests set short waits through this.
-const DURATION_PATTERN = /^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$/
+// Whole hours, then minutes, then seconds, each optional, 15 digits at most (the engine stores no longer number):
+// a subset of the SDK's Duration. The SDK does not export its parser. Tests set short waits through this.
+const DURATION_PATTERN = /^(?:(\d{1,15})h)?(?:(\d{1,15})m)?(?:(\d{1,15})s)?$/
 
 function isDuration(value: string): value is Duration {
   return value !== '' && DURATION_PATTERN.test(value)
@@ -103,7 +103,10 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): ShopConfig {
 
   const watchShippingTimeout = env['KYU_SHOP_WATCH_TIMEOUT'] ?? '3m'
   if (!isDuration(watchShippingTimeout)) {
-    throw new MissingConfigError('KYU_SHOP_WATCH_TIMEOUT', 'an h/m/s duration string, e.g. "3m" or "30s"')
+    throw new MissingConfigError(
+      'KYU_SHOP_WATCH_TIMEOUT',
+      'an h/m/s duration string with numbers of at most 15 digits, e.g. "3m" or "30s"',
+    )
   }
   if (durationToSeconds(watchShippingTimeout) > MAX_WATCH_SHIPPING_TIMEOUT_SECONDS) {
     throw new MissingConfigError(

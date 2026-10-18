@@ -34,7 +34,7 @@
     "@heroui/react": "^3.2.6",
     "@heroui/styles": "^3.2.6",
     "@internationalized/date": "^3.12.4",
-    "@kyuworks/sdk": "^0.3.0",
+    "@kyuworks/sdk": "^0.4.0",
     "@react-aria/ssr": "^3.10.1",
     "@react-aria/utils": "^3.34.1",
     "pg": "^8.23.1",
